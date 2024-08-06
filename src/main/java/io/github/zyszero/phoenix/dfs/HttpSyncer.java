@@ -1,6 +1,5 @@
-package io.github.zyszero.phoenix.fs;
+package io.github.zyszero.phoenix.dfs;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
