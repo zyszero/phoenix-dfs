@@ -1,0 +1,23 @@
+server:
+  port: 8080
+  servlet:
+    encoding:
+      enabled: true
+      charset: UTF-8
+      force: true
+      force-request: true
+      force-response: true
+
+spring:
+  application:
+    name: phoenix-fs
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+
+phoenix-fs:
+  path: ${user.home}/phoenix-fs
+  backup-url: http://localhost:8081/upload
