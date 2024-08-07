@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 /**
  * file download and upload controller
@@ -24,11 +25,11 @@ import java.nio.charset.StandardCharsets;
 @RestController
 public class FileController {
 
-    @Value("${phoenix-fs.path}")
+    @Value("${phoenix-dfs.path}")
     private String uploadPath;
 
 
-    @Value("${phoenix-fs.backup-url}")
+    @Value("${phoenix-dfs.backup-url}")
     private String backupUrl;
 
 
@@ -44,24 +45,20 @@ public class FileController {
             return "file is null";
         }
 
-        File dir = new File(uploadPath);
-        if (!dir.exists()) {
-            dir.mkdir();
-        }
 
         boolean needSync = false;
 
         String filename = request.getHeader(HttpSyncer.X_FILENAME);
         if (filename == null || filename.isEmpty()) {
             needSync = true;
-            filename = file.getOriginalFilename();
-        } else {
-            filename = new String(filename.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+            filename = FileUtils.getUUIDFilename(file.getOriginalFilename());
         }
-        System.out.println(" filename: " + filename);
-        File destFile = new File(uploadPath + "/", filename);
+
+        String subDir = FileUtils.getSubDir(filename);
+        File destFile = new File(uploadPath + "/" + subDir + "/" + filename);
         file.transferTo(destFile);
 
+        // 同步文件到备份服务器
         if (needSync) {
             httpSyncer.sync(destFile, backupUrl);
         }
@@ -72,7 +69,8 @@ public class FileController {
 
     @RequestMapping("/download")
     public void download(String name, HttpServletResponse response) {
-        String path = uploadPath + "/" + name;
+        String subDir = FileUtils.getSubDir(name);
+        String path = uploadPath + "/" + subDir + "/" + name;
         File file = new File(path);
         try {
             FileInputStream fis = new FileInputStream(file);
@@ -81,8 +79,9 @@ public class FileController {
 
             // 加一些 responses 的头
             response.setCharacterEncoding("UTF-8");
-            response.setContentType("application/octet-stream");
-            response.setHeader("Content-Disposition", "attachment;filename=" + name);
+//            response.setContentType("application/octet-stream");
+            response.setContentType(FileUtils.getMimeType(name));
+//            response.setHeader("Content-Disposition", "attachment;filename=" + name);
             response.setHeader("Content-Length", String.valueOf(file.length()));
 
 

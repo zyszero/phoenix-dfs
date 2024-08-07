@@ -10,7 +10,7 @@ server:
 
 spring:
   application:
-    name: phoenix-fs
+    name: phoenix-dfs
 
   servlet:
     multipart:
@@ -18,6 +18,6 @@ spring:
       max-request-size: 100MB
 
 
-phoenix-fs:
-  path: ${user.home}/phoenix-fs
+phoenix-dfs:
+  path: ${user.home}/phoenix-dfs
   backup-url: http://localhost:8081/upload
