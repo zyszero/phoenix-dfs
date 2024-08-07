@@ -22,13 +22,15 @@ import java.io.File;
 public class HttpSyncer {
 
     public final static String X_FILENAME = "X-Filename";
+    public final static String X_ORIGINAL_FILENAME = "X-Original-Filename";
 
 
-    public String sync(File file, String url) {
+    public String sync(File file, String originalFilename, String url) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         headers.add(X_FILENAME, file.getName());
+        headers.add(X_ORIGINAL_FILENAME, originalFilename);
 
         MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();
         bodyBuilder.part("file", new FileSystemResource(file));

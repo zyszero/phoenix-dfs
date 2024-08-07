@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.DigestUtils;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -32,6 +34,9 @@ public class FileController {
     @Value("${phoenix-dfs.backup-url}")
     private String backupUrl;
 
+    @Value("${phoenix-dfs.auto-md5}")
+    private boolean autoMd5;
+
 
     @Autowired
     private HttpSyncer httpSyncer;
@@ -45,22 +50,45 @@ public class FileController {
             return "file is null";
         }
 
-
+        // 1. 处理文件
         boolean needSync = false;
-
         String filename = request.getHeader(HttpSyncer.X_FILENAME);
+        String originalFilename =  file.getOriginalFilename();
         if (filename == null || filename.isEmpty()) {
             needSync = true;
-            filename = FileUtils.getUUIDFilename(file.getOriginalFilename());
+            filename = FileUtils.getUUIDFilename(originalFilename);
+        } else {
+           String xof = request.getHeader(HttpSyncer.X_ORIGINAL_FILENAME);
+           if (xof != null && !xof.isEmpty()) {
+               originalFilename = xof;
+           }
         }
 
         String subDir = FileUtils.getSubDir(filename);
         File destFile = new File(uploadPath + "/" + subDir + "/" + filename);
         file.transferTo(destFile);
 
-        // 同步文件到备份服务器
+
+        // 2. 处理 meta
+        FileMeta meta = new FileMeta();
+        meta.setName(filename);
+        meta.setOriginalName(originalFilename);
+        meta.setSize(file.getSize());
+        meta.getTags().put("md5", DigestUtils.md5DigestAsHex(new FileInputStream(destFile)));
+
+        // 2.1 存放到本地文件
+        // todo: 存在 bug，同步 backup 会丢失 meta 数据。待解决
+        String metaName = filename + ".meta";
+        File metaFile = new File(uploadPath + "/" + subDir + "/" + metaName);
+        FileUtils.write(metaFile, meta);
+
+        // 2.2 存放到数据库
+
+        // 2.3 存放到配置中心或注册中心，比如 zk
+
+        // 3. 同步文件到备份服务器
         if (needSync) {
-            httpSyncer.sync(destFile, backupUrl);
+            httpSyncer.sync(destFile, originalFilename, backupUrl);
         }
 
         return filename;
@@ -94,9 +122,19 @@ public class FileController {
             outputStream.flush();
             inputStream.close();
         } catch (Exception e) {
-
+            e.printStackTrace();
         }
+    }
 
-
+    @RequestMapping("/meta")
+    public String meta(String name) {
+        String subDir = FileUtils.getSubDir(name);
+        String path = uploadPath + "/" + subDir + "/" + name + ".meta";
+        File file = new File(path);
+        try {
+            return FileCopyUtils.copyToString(new FileReader(file, StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

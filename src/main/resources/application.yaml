@@ -21,3 +21,4 @@ spring:
 phoenix-dfs:
   path: ${user.home}/phoenix-dfs
   backup-url: http://localhost:8081/upload
+  auto-md5: true
