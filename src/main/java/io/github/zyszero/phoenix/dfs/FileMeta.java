@@ -20,8 +20,13 @@ public class FileMeta {
     private String name;
     private String originalName;
     private long size;
-
+    private String downloadUrl;
     private Map<String, String> tags = new HashMap<>();
 
-
+    public FileMeta(String name, String originalName, long size, String downloadUrl) {
+        this.name = name;
+        this.originalName = originalName;
+        this.size = size;
+        this.downloadUrl = downloadUrl;
+    }
 }

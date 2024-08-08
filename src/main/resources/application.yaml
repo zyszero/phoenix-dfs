@@ -18,7 +18,16 @@ spring:
       max-request-size: 100MB
 
 
+rocketmq:
+  name-server: 192.168.200.39:9876
+  producer:
+    group: phoenix-dfs-producer
+
+
 phoenix-dfs:
   path: ${user.home}/phoenix-dfs
-  backup-url: http://localhost:8081/upload
+  sync-backup: false
   auto-md5: true
+  group: C8080
+  backup-url: http://localhost:8081/upload
+  download-url: http://localhost:8080/download
