@@ -1,7 +1,7 @@
-package io.github.zyszero.phoenix.dfs;
+package io.github.zyszero.phoenix.dfs.utils;
 
 import com.alibaba.fastjson2.JSON;
-import jakarta.servlet.ServletOutputStream;
+import io.github.zyszero.phoenix.dfs.meta.FileMeta;
 import lombok.SneakyThrows;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
@@ -14,7 +14,6 @@ import java.io.*;
 import java.net.FileNameMap;
 import java.net.URLConnection;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.UUID;

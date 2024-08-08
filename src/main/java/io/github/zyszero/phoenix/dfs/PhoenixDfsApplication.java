@@ -1,6 +1,10 @@
 package io.github.zyszero.phoenix.dfs;
 
+import io.github.zyszero.phoenix.dfs.config.PhoenixDfsProperties;
+import io.github.zyszero.phoenix.dfs.utils.FileUtils;
 import org.apache.rocketmq.spring.autoconfigure.RocketMQAutoConfiguration;
+import org.checkerframework.checker.units.qual.A;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
@@ -20,15 +24,14 @@ public class PhoenixDfsApplication {
     // 1. 基于文件存储的分布式文件系统
     // 2. 块存储 ==> 最常见，效率最高 ==> 改造成这个。
     // 3. 对象存储
-
-    @Value("${phoenix-dfs.path}")
-    private String uploadPath;
+    @Autowired
+    private PhoenixDfsProperties properties;
 
     @Bean
     ApplicationRunner runner() {
         return args -> {
-            FileUtils.init(uploadPath);
-            System.out.println("Phoenix DFS is running...");
+            FileUtils.init(properties.getUploadPath());
+            System.out.println("Phoenix DFS started...");
         };
     }
 }

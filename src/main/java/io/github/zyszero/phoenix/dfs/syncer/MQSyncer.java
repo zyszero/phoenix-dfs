@@ -1,6 +1,9 @@
-package io.github.zyszero.phoenix.dfs;
+package io.github.zyszero.phoenix.dfs.syncer;
 
 import com.alibaba.fastjson.JSON;
+import io.github.zyszero.phoenix.dfs.config.PhoenixDfsProperties;
+import io.github.zyszero.phoenix.dfs.meta.FileMeta;
+import io.github.zyszero.phoenix.dfs.utils.FileUtils;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
@@ -24,15 +27,9 @@ import java.io.File;
 public class MQSyncer {
     private final static String TOPIC = "phoenix-dfs";
 
-    @Value("phoenix-dfs.group")
-    private String group;
 
-    @Value("${phoenix-dfs.path}")
-    private String uploadPath;
-
-
-    @Value("${phoenix-dfs.download-url}")
-    private String localDownloadUrl;
+    @Autowired
+    private PhoenixDfsProperties properties;
 
     @Autowired
     private RocketMQTemplate rocketMQTemplate;
@@ -63,7 +60,7 @@ public class MQSyncer {
             }
 
             // 去重本机操作
-            if (localDownloadUrl.equals(downloadUrl)) {
+            if (properties.getDownloadUrl().equals(downloadUrl)) {
                 System.out.println(" ==> the same file server, ignore sync task.");
                 return;
             }
@@ -71,7 +68,7 @@ public class MQSyncer {
 
 
             // 2. 写 meta 文件
-            String dir = uploadPath + "/" + FileUtils.getSubDir(meta.getName());
+            String dir = properties.getUploadPath() + "/" + FileUtils.getSubDir(meta.getName());
             File metaFile = new File(dir, meta.getName() + ".meta");
             if (metaFile.exists()) {
                 System.out.println(" ==> meta file exists and ignore save: " + metaFile.getAbsolutePath());

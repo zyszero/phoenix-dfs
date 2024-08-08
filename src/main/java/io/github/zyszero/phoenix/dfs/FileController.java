@@ -1,5 +1,10 @@
 package io.github.zyszero.phoenix.dfs;
 
+import io.github.zyszero.phoenix.dfs.config.PhoenixDfsProperties;
+import io.github.zyszero.phoenix.dfs.meta.FileMeta;
+import io.github.zyszero.phoenix.dfs.syncer.HttpSyncer;
+import io.github.zyszero.phoenix.dfs.syncer.MQSyncer;
+import io.github.zyszero.phoenix.dfs.utils.FileUtils;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,7 +21,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 
 /**
  * file download and upload controller
@@ -27,20 +31,9 @@ import java.util.UUID;
 @RestController
 public class FileController {
 
-    @Value("${phoenix-dfs.path}")
-    private String uploadPath;
 
-    @Value("${phoenix-dfs.backup-url}")
-    private String backupUrl;
-
-    @Value("${phoenix-dfs.download-url}")
-    private String downloadUrl;
-
-    @Value("${phoenix-dfs.auto-md5}")
-    private boolean autoMd5;
-
-    @Value("${phoenix-dfs.sync-backup}")
-    private boolean syncBackup;
+    @Autowired
+    private PhoenixDfsProperties properties;
 
     @Autowired
     private HttpSyncer httpSyncer;
@@ -71,20 +64,19 @@ public class FileController {
             }
         }
 
-        String subDir = FileUtils.getSubDir(filename);
-        File destFile = new File(uploadPath + "/" + subDir + "/" + filename);
+        File destFile = getFile(FileUtils.getSubDir(filename), filename);
         file.transferTo(destFile); // 复制文件到制定位置
-
+        System.out.println(" ==> save file: " + destFile.getAbsolutePath());
 
         // 2. 处理 meta
-        FileMeta meta = new FileMeta(filename, originalFilename, file.getSize(), downloadUrl);
-        if (autoMd5) {
+        FileMeta meta = new FileMeta(filename, originalFilename, file.getSize(), properties.getDownloadUrl());
+        if (properties.isAutoMd5()) {
             meta.getTags().put("md5", DigestUtils.md5DigestAsHex(new FileInputStream(destFile)));
         }
         // 2.1 存放到本地文件
-        String metaName = filename + ".meta";
-        File metaFile = new File(uploadPath + "/" + subDir + "/" + metaName);
+        File metaFile = new File(destFile.getAbsolutePath() + ".meta");
         FileUtils.write(metaFile, meta);
+        System.out.println(" ==> meta file save: " + metaFile.getAbsolutePath());
 
         // 2.2  TODO 存放到数据库
 
@@ -92,9 +84,9 @@ public class FileController {
 
         // 3. 同步备份文件到备份服务器
         if (needSync) {
-            if (syncBackup) {
+            if (properties.isSyncBackup()) {
                 try {
-                    httpSyncer.sync(destFile, originalFilename, backupUrl);
+                    httpSyncer.sync(destFile, originalFilename, properties.getBackupUrl());
                 } catch (Exception ex) {
                     // log ex
                     ex.printStackTrace();
@@ -105,16 +97,13 @@ public class FileController {
                 mqSyncer.sync(meta);
             }
         }
-
         return filename;
     }
 
 
     @RequestMapping("/download")
     public void download(String name, HttpServletResponse response) {
-        String subDir = FileUtils.getSubDir(name);
-        String path = uploadPath + "/" + subDir + "/" + name;
-        File file = new File(path);
+        File file = getFile(FileUtils.getSubDir(name), name);
         try {
             FileInputStream fis = new FileInputStream(file);
             InputStream inputStream = new BufferedInputStream(fis);
@@ -144,13 +133,15 @@ public class FileController {
 
     @RequestMapping("/meta")
     public String meta(String name) {
-        String subDir = FileUtils.getSubDir(name);
-        String path = uploadPath + "/" + subDir + "/" + name + ".meta";
-        File file = new File(path);
+        File file = getFile(FileUtils.getSubDir(name), name);
         try {
             return FileCopyUtils.copyToString(new FileReader(file, StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private File getFile(String subDir, String filename) {
+        return new File(properties.getUploadPath() + "/" + subDir + "/" + filename);
     }
 }

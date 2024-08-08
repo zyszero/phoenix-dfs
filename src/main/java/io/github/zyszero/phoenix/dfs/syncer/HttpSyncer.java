@@ -1,4 +1,4 @@
-package io.github.zyszero.phoenix.dfs;
+package io.github.zyszero.phoenix.dfs.syncer;
 
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;

@@ -1,4 +1,4 @@
-package io.github.zyszero.phoenix.dfs;
+package io.github.zyszero.phoenix.dfs.meta;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
