@@ -8,7 +8,7 @@
         <version>3.3.2</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>io.github.zyszero.phoenix</groupId>
+    <groupId>io.github.zyszero</groupId>
     <artifactId>phoenix-dfs</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>phoenix-fs</name>
